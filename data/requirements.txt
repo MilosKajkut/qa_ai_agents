@@ -1,0 +1,69 @@
+Requirement ID: F-001
+Name: User Account Registration
+Description: Users must be able to create a new account within the application using an email address and a password. The password must meet minimum security standards (e.g., 8 characters, one number, one special character). After successful registration, the user should be automatically logged in.
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: F-002
+Name: User Login
+Description: Registered users must be able to log in to their account using their email and password. The system should provide a Forgot Password link that initiates a password reset process via email.
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: F-003
+Name: Create Custom Habit
+Description: Logged-in users can define a new habit they want to track. This requires the user to provide a habit name (e.g., Drink 8 glasses of water) and set a frequency (e.g., daily, weekly).
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: F-004
+Name: Main Dashboard
+Description: Upon login, the user is presented with a dashboard view. This screen will display the list of habits they are currently tracking for the present day, with a clear way to see which are complete and which are pending.
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: F-005
+Name: Mark Habit as Complete
+Description: From the main dashboard, the user can mark a daily habit as complete using a simple interaction, such as tapping a checkbox or swiping. Once completed, the UI should visually update to reflect this status.
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: F-006
+Name: Progress Visualization
+Description: The application will provide a simple historical view of habit completion. This could be a calendar view or a basic bar chart showing the user's consistency (streaks) for a selected habit over the last 30 days.
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: F-007
+Name: Daily Reminders
+Description: Users can set an optional daily push notification reminder for their habits. The user should be able to set the time for this reminder (e.g., 8:00 PM) in the settings menu.
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: NF-001
+Name: Application Performance
+Description: The application must be responsive. Any screen transition or data load should take no longer than 2 seconds. UI interactions should feel instantaneous to the user.
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: NF-002
+Name: Data Security
+Description: All user data, especially personal information and passwords, must be securely stored. Passwords should be hashed, and all communication between the app and the server must be encrypted via HTTPS.
+Date: 2025-10-20
+Version: 1.0
+Scope: In-Scope (MVP)
+
+Requirement ID: F-008
+Name: Social Sharing
+Description: Users can share their achievements (e.g., I completed a 10-day streak!) to external social media platforms like Facebook or X.
+Date: 2025-10-20
+Version: 1.0
+Scope: Out-of-Scope (Post-MVP)

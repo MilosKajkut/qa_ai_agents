@@ -10,6 +10,7 @@ SYSTEM_TEST_ENG_MESSAGE = SystemMessage("""
             Description where will be explain test case objectives,
             Precondition section, where will be explained precondition for each test case. 
             Test steps should be numerated and detailed, also each test step should have expected results.
+            Provide only test, nothing else.
             """)
 
 

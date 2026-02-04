@@ -1,8 +1,5 @@
-import os
-
-from dotenv import load_dotenv
+from utils.load_env_settings import settings
 from langchain_openai import ChatOpenAI
 
-load_dotenv()
 
-model = ChatOpenAI(model=os.getenv("LLM_MODEL"), temperature=1.0)
+model = ChatOpenAI(model=settings.openai.model, temperature=1.0)

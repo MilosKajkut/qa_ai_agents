@@ -17,9 +17,10 @@ async def post_test_on_jira_agent(mcp_config: dict, test_cases: str) -> str:
                 TASK:
                 Your task is to create Issue in Jira for Test Cases. Test Cases are provided here: {test_cases}.
                 Each Test Case should have corresponding Issue in Jira.
+                Extract test cases form JSON file and use it for creation of Jira tickets.
 
                 RULES:
-                1. Issue Title should be the same as Test Case title.
+                1. Issue Title should be the same as Test ID.
                 
                 In Description of Issue put following: 
                     2. Description should be the same as Test Case description.

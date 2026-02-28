@@ -1,48 +1,108 @@
+import asyncio
+import json
+
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+
+from agents.agent_generate_test_ui import TestCases, TestCase
 from utils.model_utils import model
 
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langgraph.prebuilt import create_react_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from pydantic import BaseModel, Field
 
 
-async def post_test_on_jira_agent(mcp_config: dict, test_cases: str) -> str:
-    query = (
-        f"""
-                ROLE:
-                You are Jira exper for creating Issues in  Jira.
+class JiraTestCase(BaseModel):
+    key: str = Field(description="Test case Key like KAN-204")
+    title: str = Field(description="Brief test title")
 
-                CONTEXT:
-                Creating Issue based on provided Test Cases for project for project KAN. Issue should follow rules in format and writing.
 
-                TASK:
-                Your task is to create Issue in Jira for Test Cases. Test Cases are provided here: {test_cases}.
-                Each Test Case should have corresponding Issue in Jira.
-                Extract test cases form JSON file and use it for creation of Jira tickets.
+def extract_tool_message(message_content: str) -> dict:
+    payload = json.loads(message_content)
+    issue = payload.get("issue")
+    key = issue.get("key")
+    title = issue.get("summary")
 
-                RULES:
-                1. Issue Title should be the same as Test ID.
-                
-                In Description of Issue put following: 
-                    2. Description should be the same as Test Case description.
-                    3. Precondition should be the same as Test Case precondition.
-                    4. Test Steps should be numerated.
-                    5. Steps should be the same as Test Case Steps.
-                    6. Test Step format should be:
-                            <Step Number>. <Test Step>  - <Test Step Expected Result
-                """
+    return {"key": key, "title": title}
+
+
+def extract_jira_results(messages: list,
+                         message_type: type[HumanMessage | AIMessage | ToolMessage],
+                         extraction_fun: callable,
+                         base_model: type[BaseModel]) -> BaseModel | None | JiraTestCase:
+    matched_messages = [msg for msg in messages if isinstance(msg, message_type)]
+
+    if not matched_messages:
+        raise ValueError(f"No message of type {message_type.__name__} found in {len(messages)} messages")
+
+    for msg in reversed(matched_messages):
+        if isinstance(msg, message_type):
+            message = msg
+            extracted_values = extraction_fun(message.content)
+            return base_model(**extracted_values)
+
+    return None
+
+
+def build_jira_query(tc: TestCase) -> str:
+    steps_formatted = "\n".join(
+        f"{step.step_number}. {step.action} → Expected: {step.expected_result}"
+        for step in tc.steps
     )
+    preconditions = "\n".join(f"- {p}" for p in tc.preconditions)
 
+    return f"""
+            CONTEXT:
+                Creating Issue based on provided Test Cases for project for project KAN. 
+                Issue should follow rules in format and writing.
+                
+            TASK:
+                Your task is to create Issue in Jira for Test Cases.
+                Create Jira issue in project KAN with the following exact values.
+                Do not infer, summarize, or modify any field — use the values exactly as provided.
+            RULES:
+            
+                ISSUE TITLE:
+                {tc.title}
+                
+                In Description of Issue put following:
+                                
+                                PRECONDITIONS:
+                                {preconditions}
+                                
+                                TEST STEPS:
+                                {steps_formatted}
+                                
+                                SOURCE PAGE: {tc.source_page}
+                
+            Do not ask for confirmation.
+            """
+
+
+async def post_test_on_jira_agent(mcp_config: dict, test_cases: TestCases, post_retries=2) -> (list, TestCases):
     client = MultiServerMCPClient(mcp_config["config"])
+
     async with client.session(mcp_config["mcp_name"]) as session:
         mcp_tools = await load_mcp_tools(session)
-
         agent = create_react_agent(model, mcp_tools)
 
-        print(f"🤖 Agent acting on: '{query}'")
+        results = []
+        for test_case in test_cases.tests:
+            for attempt in range(post_retries + 1):
+                query = build_jira_query(test_case)
+                try:
+                    result = await agent.ainvoke({"messages": [("user", query)]})
+                    jira_test_case: JiraTestCase = extract_jira_results(result["messages"],
+                                                                        ToolMessage,
+                                                                        extract_tool_message,
+                                                                        JiraTestCase)
+                    test_case.test_id = jira_test_case.key
+                    results.append(test_case.test_id)
+                    print(f"Test Case {test_case.test_id}: {test_case.title} successfully posted on Jira.")
+                    break
+                except Exception as e:
+                    if attempt == post_retries:
+                        print(f"Test Case {test_case.test_id}: {test_case.title} could not be posted on Jira.")
+                    await asyncio.sleep(2 ** attempt)
 
-        result = await agent.ainvoke({"messages": [("user", query)]})
-
-        last_message = result["messages"][-1]
-        print(last_message)
-
-        return last_message
+        return results, test_cases

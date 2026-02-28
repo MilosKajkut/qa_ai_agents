@@ -49,6 +49,7 @@ def file_system_manager(folder_structure: str):
         1. If folder/file already exists, do not create folder/file.
         2. If folder/file does not exist, create folder/file.
         3. Create folders/files in {file_system_root} path.
+        4. If file have extension .py, create python file.
         
         """
     )

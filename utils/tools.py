@@ -2,7 +2,7 @@ import base64
 import os
 
 
-def covert_image_to_base64(image_path):
+def convert_image_to_base64(image_path):
     # check does path exist
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"The file at {image_path} was not found.")

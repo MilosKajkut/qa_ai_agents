@@ -1,23 +1,27 @@
 [project]
 name = "qa-ai-agents"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI Agents for QA automation: test case generation and Jira integration"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "python-dotenv ==1.0.1",
+    "python-dotenv==1.0.1",
     "langchain<1.0.0",
     "langchain-community",
     "langchain-anthropic",
     "langchain-openai",
-    "firestore ==0.0.8",
-    "chromadb ==0.5.0",
-    "tiktoken ==0.7.0",
-    "sentence-transformers ==3.0.0",
-    "bs4 ==0.0.2",
-    "firecrawl-py ==0.0.13",
-        "langchainhub ==0.1.18",
-    "wikipedia ==1.4.0",
-    "tavily-python ==0.3.3",
-        "langchain-mcp-adapters==0.1.11",
+    "langchain-chroma",
+    "langchain-huggingface",
+    "langgraph",
+    "langchain-mcp-adapters==0.1.11",
+    "langchainhub==0.1.18",
+    "chromadb==0.5.0",
+    "tiktoken==0.7.0",
+    "sentence-transformers==3.0.0",
+    "pydantic-settings",
+    "bs4==0.0.2",
+    "firecrawl-py==0.0.13",
+    "wikipedia==1.4.0",
+    "tavily-python==0.3.3",
+    "firestore==0.0.8",
 ]

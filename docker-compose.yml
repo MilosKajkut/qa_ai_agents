@@ -1,0 +1,11 @@
+services:
+  qa-ai-agents:
+    build: .
+    env_file: .env
+    volumes:
+      # UI screenshots to process
+      - ./pages:/app/pages
+      # ChromaDB persistent storage
+      - ./data:/app/data
+      # Docker socket — required for the Atlassian MCP which runs docker internally
+      - /var/run/docker.sock:/var/run/docker.sock

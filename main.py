@@ -119,7 +119,7 @@ async def create_file_system_structure(state: AgentState):
 
     response = await file_system_manager(framework_system_file)
 
-    return {"messages": [response]}
+    return {"messages": [("assistant", response)]}
 
 
 ### SETUP WORKFLOW ###

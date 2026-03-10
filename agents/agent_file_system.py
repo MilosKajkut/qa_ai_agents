@@ -1,17 +1,16 @@
 import os
+from pathlib import Path
 
-from dotenv import load_dotenv
 from langchain_community.agent_toolkits import FileManagementToolkit
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 
+from utils.load_env_settings import settings
 from utils.model_utils import model
 from utils.path_utils import project_dir
 
 root_dir = str(project_dir)
-load_dotenv()
-
-file_system_root = os.getenv("ROOT_DIR_NAME")
+file_system_root = settings.playwright.root_dir_name
 
 
 @tool
@@ -21,7 +20,7 @@ def create_directory(directory_path: str) -> str:
           directory_path: The relative path of the directory to create.
     """
     full_path = os.path.join(root_dir, directory_path)
-    if not os.path.commonpath([root_dir, full_path]) == root_dir:
+    if not Path(full_path).resolve().is_relative_to(Path(root_dir).resolve()):
         return "Error: specific path is outside the sandbox root."
 
     try:
@@ -31,7 +30,7 @@ def create_directory(directory_path: str) -> str:
         return f"Error creating directory: {e}"
 
 
-def file_system_manager(folder_structure: str):
+async def file_system_manager(folder_structure: str):
     toolkit = FileManagementToolkit(
         root_dir=root_dir,
         selected_tools=["read_file", "write_file", "list_directory", "file_search"]
@@ -45,16 +44,16 @@ def file_system_manager(folder_structure: str):
         f"""
         Your job is to create folder/file structure following this pattern: {folder_structure}.
         Follow rules:
-        
+
         1. If folder/file already exists, do not create folder/file.
         2. If folder/file does not exist, create folder/file.
         3. Create folders/files in {file_system_root} path.
         4. If file have extension .py, create python file.
-        
+
         """
     )
 
-    result = agent.invoke(
+    result = await agent.ainvoke(
         {"messages": [("user", prompt)]},
     )
 

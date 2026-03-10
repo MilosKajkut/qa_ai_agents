@@ -15,7 +15,7 @@ dependencies = [
     "langgraph",
     "langchain-mcp-adapters==0.1.11",
     "langchainhub==0.1.18",
-    "chromadb==0.5.0",
+    "chromadb>=0.5.23",
     "tiktoken==0.7.0",
     "sentence-transformers==3.0.0",
     "pydantic-settings",
@@ -24,4 +24,5 @@ dependencies = [
     "wikipedia==1.4.0",
     "tavily-python==0.3.3",
     "firestore==0.0.8",
+    "langfuse>=3.14.5",
 ]

@@ -13,8 +13,10 @@ from typing import Annotated, TypedDict
 from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END, add_messages
 from langchain_core.documents import Document
+from langfuse.langchain import CallbackHandler
 
 page_images = Path(pages_dir, "testers-ai-testing-wcag_a")
+langfuse_handler = CallbackHandler()
 
 
 class AgentState(TypedDict):
@@ -110,12 +112,12 @@ def generate_folder_structure_framework(state: AgentState):
     return {"framework_structure": response.content}
 
 
-def create_file_system_structure(state: AgentState):
+async def create_file_system_structure(state: AgentState):
     framework_system_file = state.get("framework_structure", None)
     if framework_system_file is None:
         raise Exception("There is no information about Framework structure.")
 
-    response = file_system_manager(framework_system_file)
+    response = await file_system_manager(framework_system_file)
 
     return {"messages": [response]}
 
@@ -149,7 +151,7 @@ msg = ("From this image, "
 
 async def main():
     input_payload = {"messages": [HumanMessage(content=msg)]}
-    async for chunk in app.astream(input_payload):
+    async for chunk in app.astream(input_payload, config={"callbacks": [langfuse_handler]}):
         if "generate_folder_structure_framework" in chunk:
             fw_structure = chunk["generate_folder_structure_framework"]["framework_structure"]
             print(fw_structure)

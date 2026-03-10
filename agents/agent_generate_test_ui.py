@@ -8,7 +8,7 @@ from utils.tools import convert_image_to_base64
 SYSTEM_TEST_ENG_MESSAGE = SystemMessage("""
             You are Senior Test Engineer with great experience in writing manual test cases. 
             You task is to write manual test case for web page following the best practices and standards. 
-            For Testing, follow ISTQB practices for testing technices.
+            For Testing, follow ISTQB practices for testing techniques.
             Each test case should have title like TC-<ID>-<Name of Test case>, 
             Description where will be explain test case objectives,
             Precondition section, where will be explained precondition for each test case. 
@@ -31,7 +31,7 @@ class TestCase(BaseModel):
     ui_components: List[str] = Field(description="UI elements involved")
     feature_area: str
     priority: str = Field(description="High / Medium / Low")
-    source_page: str = Field(description="Page which will be tested by test case")
+    source_page: str = Field(description="Page which will be tested by test case", default="")
 
 
 class TestCases(BaseModel):

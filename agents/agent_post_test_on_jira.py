@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
@@ -10,6 +11,8 @@ from langchain_mcp_adapters.tools import load_mcp_tools
 from langgraph.prebuilt import create_react_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from pydantic import BaseModel, Field
+
+JIRA_PROJECT_KEY = os.getenv("JIRA_PROJECT_KEY", "KAN")
 
 
 class JiraTestCase(BaseModel):
@@ -29,22 +32,18 @@ def extract_tool_message(message_content: str) -> dict:
 def extract_jira_results(messages: list,
                          message_type: type[HumanMessage | AIMessage | ToolMessage],
                          extraction_fun: callable,
-                         base_model: type[BaseModel]) -> BaseModel | None | JiraTestCase:
+                         base_model: type[BaseModel]) -> BaseModel:
     matched_messages = [msg for msg in messages if isinstance(msg, message_type)]
 
     if not matched_messages:
         raise ValueError(f"No message of type {message_type.__name__} found in {len(messages)} messages")
 
-    for msg in reversed(matched_messages):
-        if isinstance(msg, message_type):
-            message = msg
-            extracted_values = extraction_fun(message.content)
-            return base_model(**extracted_values)
-
-    return None
+    last_message = matched_messages[-1]
+    extracted_values = extraction_fun(last_message.content)
+    return base_model(**extracted_values)
 
 
-def build_jira_query(tc: TestCase) -> str:
+def build_jira_query(tc: TestCase, project_key: str = JIRA_PROJECT_KEY) -> str:
     steps_formatted = "\n".join(
         f"{step.step_number}. {step.action} → Expected: {step.expected_result}"
         for step in tc.steps
@@ -53,28 +52,28 @@ def build_jira_query(tc: TestCase) -> str:
 
     return f"""
             CONTEXT:
-                Creating Issue based on provided Test Cases for project for project KAN. 
+                Creating Issue based on provided Test Cases for project {project_key}.
                 Issue should follow rules in format and writing.
-                
+
             TASK:
                 Your task is to create Issue in Jira for Test Cases.
-                Create Jira issue in project KAN with the following exact values.
+                Create Jira issue in project {project_key} with the following exact values.
                 Do not infer, summarize, or modify any field — use the values exactly as provided.
             RULES:
-            
+
                 ISSUE TITLE:
                 {tc.title}
-                
+
                 In Description of Issue put following:
-                                
+
                                 PRECONDITIONS:
                                 {preconditions}
-                                
+
                                 TEST STEPS:
                                 {steps_formatted}
-                                
+
                                 SOURCE PAGE: {tc.source_page}
-                
+
             Do not ask for confirmation.
             """
 
@@ -101,8 +100,10 @@ async def post_test_on_jira_agent(mcp_config: dict, test_cases: TestCases, post_
                     print(f"Test Case {test_case.test_id}: {test_case.title} successfully posted on Jira.")
                     break
                 except Exception as e:
+                    print(f"[warn] Attempt {attempt + 1} failed for '{test_case.title}': {e}")
                     if attempt == post_retries:
                         print(f"Test Case {test_case.test_id}: {test_case.title} could not be posted on Jira.")
-                    await asyncio.sleep(2 ** attempt)
+                    else:
+                        await asyncio.sleep(2 ** attempt)
 
         return results, test_cases

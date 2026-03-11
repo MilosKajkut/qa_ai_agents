@@ -18,6 +18,7 @@ dependencies = [
     "chromadb>=0.5.23",
     "tiktoken==0.7.0",
     "sentence-transformers==3.0.0",
+    "hf_xet",
     "pydantic-settings",
     "bs4==0.0.2",
     "firecrawl-py==0.0.13",

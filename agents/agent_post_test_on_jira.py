@@ -1,11 +1,14 @@
 import asyncio
 import json
 import os
+import langfuse
 
 from deepeval.metrics import ToolCorrectnessMetric
 from deepeval.test_case import LLMTestCase, ToolCall
 from deepeval.tracing import update_current_span
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+from langfuse import Langfuse
+from langfuse.langchain import CallbackHandler
 
 from agents.agent_generate_test_ui import TestCases, TestCase
 from utils.extract_msg.ai_message import get_tool_call_from_ai_message
@@ -16,6 +19,9 @@ from langgraph.prebuilt import create_react_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from pydantic import BaseModel, Field
 from deepeval.tracing import observe
+
+
+langfuse = Langfuse()
 
 JIRA_PROJECT_KEY = os.getenv("JIRA_PROJECT_KEY", "KAN")
 
@@ -94,9 +100,13 @@ async def post_test_on_jira_agent(mcp_config: dict, test_cases: TestCases, post_
         for test_case in test_cases.tests:
             for attempt in range(post_retries + 1):
                 query = build_jira_query(test_case)
+                langfuse_handler = CallbackHandler()
                 try:
                     # get final result of execution
-                    result = await agent.ainvoke({"messages": [("user", query)]})
+                    result = await agent.ainvoke(
+                        {"messages": [("user", query)]},
+                        config={"callbacks": [langfuse_handler]},
+                    )
                 except Exception as e:
                     print(f"[warn] Attempt {attempt + 1} failed for '{test_case.title}': {e}")
                     if attempt == post_retries:
@@ -108,12 +118,21 @@ async def post_test_on_jira_agent(mcp_config: dict, test_cases: TestCases, post_
                 used_tools = get_tool_call_from_ai_message(result)
                 llm_test_case = LLMTestCase(
                     input=str(test_cases),
-                    actual_output="We offer a 30-day full refund at no extra cost.",
-                    # Replace this with the tools that was actually used by your LLM agent
+                    actual_output=str(result),
                     tools_called=[ToolCall(name=tool["name"]) for tool in used_tools],
-                    expected_tools=[ToolCall(name="jira_create_issue")],
+                    expected_tools=[ToolCall(name="jira_create_issue"), ToolCall(name="jira_issue")],
                 )
                 update_current_span(test_case=llm_test_case)
+
+                # score the LangFuse trace with DeepEval metric result
+                metric = ToolCorrectnessMetric()
+                metric.measure(llm_test_case)
+                langfuse.create_score(
+                    trace_id=langfuse_handler.last_trace_id,
+                    name="tool_correctness",
+                    value=metric.score,
+                    comment=metric.reason,
+                )
 
                 # get created jira test case
                 jira_test_case: JiraTestCase = extract_jira_results(result["messages"],
